@@ -6,12 +6,12 @@ rdm630 rfid2(10, 0);
 rdm630 rfid3(11, 0);
 rdm630 rfid4(12, 0);
 
-boolean busy = false;
-rdm630 allreaders[4] = {rfid1, rfid2, rfid3, rfid4};
-String tag[nreader];
-int lock = 7;
+boolean busy = false; //not really sure if I need this
+rdm630 allreaders[4] = {rfid1, rfid2, rfid3, rfid4}; //array containing each rfid to be polled
+String tag[nreader]; // array to store tags of currently placed tags
+int lock = 7; //pin for lock (not yet implemented fully)
 
-String objects[4] = {"160457ba0","1603442510","1707bc02f0","1708b8280"};
+String objects[4] = {"160457ba0","1603442510","1707bc02f0","1708b8280"}; //tagIDs of correct objects to be placed
 
 void setup()
 {
@@ -22,15 +22,14 @@ void setup()
 void loop()
 {
   if (!busy) {
-    for (int reader = 0 ; reader < nreader; reader ++) {
+    for (int reader = 0 ; reader < nreader; reader ++) {    //cycle through each reader beginning software serial, reading tag then ending software serial
       allreaders[reader].begin();
       tag[reader] = readTag(reader);
       allreaders[reader].end();
-      //delay(500);
     }
 
   }
-  if(isitsolved(tag,objects)){
+  if(isitsolved(tag,objects)){                              //check to see if all objects are placed
     Serial.println("Puzzle Solved");
     unlock();
   }
@@ -65,7 +64,7 @@ boolean isitsolved(String t[nreader], String o[nreader]) {
       solved = false;
     }
     else{
-    Serial.print(t[j]);
+    Serial.print(t[j]);           //debugging to see which tags/objects are detected in correct positions
     Serial.print(" - ");
     Serial.println(o[j]);
   }}
