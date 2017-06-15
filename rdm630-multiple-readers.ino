@@ -1,117 +1,87 @@
 #include <rdm630.h>
-#define NoOfReaders   4
+#define nreader  4
 
-String obj1 = "a";                         //object ids from each tag
-String obj2 = "b";
-String obj3 = "c";
-String obj4 = "d";
-String objects[] = {obj1,obj2,obj3,obj4}; //array to hold all object ids in correct order
-//String s1;
-//String s2;
-//String s3;
-//String s4;
-String slots[NoOfReaders];                          //array to hold the currently place object id in each slot
-//int led1 = 3;
-//int led2 = 4;
-//int led3 = 5;
-//int led4 = 6;
-int leds[] = {3,4,5,6};                     //array to hold pins of indicator leds used to signify which items are in the correct position
-int lock = 7;
+rdm630 rfid1(9, 0);  //TX-pin of RDM630 connected to Arduino pin 9
+rdm630 rfid2(10, 0);
+rdm630 rfid3(11, 0);
+rdm630 rfid4(12, 0);
 
+int leds[nreader] = {2, 3, 4, 5}; // pins for leds to indicate when object is placed correctly over sensor
+//boolean busy = false; //not really sure if I need this
+rdm630 allreaders[4] = {rfid1, rfid2, rfid3, rfid4}; //array containing each rfid to be polled
+String tag[nreader]; // array to store tags of currently placed tags
+int lock = 7; //pin for lock (not yet implemented fully)
 
-rdm630 slot1(9, 0);  //TX-pin of RDM630 connected to Arduino pin 9
-rdm630 slot2(10, 1);  //TX-pin of RDM630 connected to Arduino pin 10
-//rdm630 slot3(11,0);  //TX-pin of RDM630 connected to Arduino pin 11
-//rdm630 slot4(12, 0);  //TX-pin of RDM630 connected to Arduino pin 12
-
+String objects[4] = {"160457ba0", "1603442510", "1707bc02f0", "1708b8280"}; //tagIDs of correct objects to be placed
 
 void setup()
 {
-    Serial.begin(9600);           // start serial to PC
-    slot1.begin();                //init all rfid readers
-    slot2.begin();
-    //slot3.begin();
-    //slot4.begin();
-    for (int i=0;i<NoOfReaders;i++){   // init led pins
-      pinMode(leds[i],OUTPUT);
-      Serial.println("init leds");
-    }
-    pinMode(lock,OUTPUT);
-    for (int i=0;i<NoOfReaders;i++){
-      digitalWrite(leds[i],LOW);       // set all leds off
-    }
-      digitalWrite(lock,LOW);
+  Serial.begin(9600);
+  Serial.println("Serial Started");
+  for (int k = 0; k > nreader ; k ++) {
+    pinMode(leds[k], OUTPUT);
+    digitalWrite(leds[k], LOW);
+  }
 }
 
 void loop()
 {
-    byte data[6];
-    byte length;
-    slot1.listen();
-    if (slot1.isListening()){
-      //Serial.println("slot 1 listening");
-      //Serial.println(slot1.available());
-    if(slot1.available()){              //scan slot one using software serial to see if a tag is present
-        slot1.getData(data,length);
-        Serial.println("Data valid");
-        //for(int i=0;i<length;i++){
-            //slots[0] += (data[i],HEX);
-        //}
-        unsigned long result = 
-          ((unsigned long int)data[1]<<24) + 
-          ((unsigned long int)data[2]<<16) + 
-          ((unsigned long int)data[3]<<8) + 
-          data[4];              
-        Serial.print("decimal CardID: ");
-        Serial.println(result);
-    }}
-    //delay(500);
-    slot2.listen();
-    if (slot2.isListening()){
-      //Serial.println("slot 2 listening");
-    if(slot2.available()){              //scan slot one using software serial to see if a tag is present
-        slot2.getData(data,length);
-        Serial.println("Data valid");
-        //for(int i=0;i<length;i++){
-            //slots[0] += (data[i],HEX);
-        //}
-        unsigned long result = 
-          ((unsigned long int)data[1]<<24) + 
-          ((unsigned long int)data[2]<<16) + 
-          ((unsigned long int)data[3]<<8) + 
-          data[4];              
-        Serial.print("decimal CardID: ");
-        Serial.println(result);
-    }}
-    checkpositions();
-    resetscan();
-}
-
-void checkpositions(){              //for each slot see if the correct object is placed
-  bool matched = true;
-  for (int i=0;i<NoOfReaders;i++){
-    if(objects[i]==slots[i]){
-      digitalWrite(leds[i],HIGH);
-    }
-    else{
-      digitalWrite(leds[i],LOW);
-      matched = false;              //if at least one object is not in position, matched will be false
-    }
+  for (int reader = 0 ; reader < nreader; reader ++) {    //cycle through each reader beginning software serial, reading tag then ending software serial
+    allreaders[reader].begin();
+    delay(60);                                            //delay to allow reader to begin successfully
+    tag[reader] = readTag(reader);
+    allreaders[reader].end();
   }
-  if(matched){                      //if matched is true all objects have been placed
+
+  if (isitsolved(tag, objects)) {                           //check to see if all objects are placed
+    Serial.println("Puzzle Solved");
     unlock();
   }
 }
 
-void resetscan(){         //reset all slot variables to blank to prepare for next scan through rfid readers
-  for (int i=0;i<NoOfReaders;i++){
-    slots[i] = "";
+String readTag(int r) {
+  byte data[6];
+  byte length;
+  String tagID;
+  for (int i = 0 ; i < 1000 ; i++) {
+    if (allreaders[r].available()) {
+      delay(30);                                  // delay before attempting to read buffer
+      allreaders[r].getData(data, length);
+      Serial.print("Data valid on reader ");
+      Serial.println(r + 1);
+      for (int i = 0; i < length; i++) {
+        tagID += String(data[i], HEX);
+      }
+      Serial.println(tagID);
+      return tagID;
+    }
   }
 }
 
-void unlock(){                //unlocks maglock (via relay) can insert code here to play sound or trigger other event as needed
-  Serial.println("UNLOCKED");
-  digitalWrite(lock,HIGH);
+boolean isitsolved(String t[nreader], String o[nreader]) {
+  boolean solved = true;
+  Serial.println("================================");
+  for (int j = 0 ; j < nreader; j ++) {
+    if (t[j] != o[j]) {
+      solved = false;
+      digitalWrite(leds[j], LOW);
+
+    }
+    else {
+      Serial.print(t[j]);           //debugging to see which tags/objects are detected in correct positions
+      Serial.print(" - ");
+      Serial.println(o[j]);
+      Serial.println("  -- OBJECT PLACED CORRECTLY");
+      digitalWrite(leds[j], HIGH);
+
+    }
+  }
+  return solved;
+}
+
+void unlock() {
+  Serial.println("Lock Open");
+  digitalWrite(lock, LOW);
   delay(5000);
-  digitalWrite(lock,LOW);
+  digitalWrite(lock, HIGH);
 }
