@@ -1,4 +1,4 @@
-#include <rdm630.h>
+#include <rdm630.h> // library downloaded from here https://github.com/LieBtrau/Aiakos/tree/a6ed7b2c91bc4e02473b41cb376f8add3917920a/RDM630
 #define nreader  4
 
 rdm630 rfid1(9, 0);  //TX-pin of RDM630 connected to Arduino pin 9
