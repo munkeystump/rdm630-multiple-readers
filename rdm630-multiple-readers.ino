@@ -1,18 +1,20 @@
 #include <rdm630.h> // library downloaded from here https://github.com/LieBtrau/Aiakos/tree/a6ed7b2c91bc4e02473b41cb376f8add3917920a/RDM630
-#define nreader  4
+#define nreader  6
 
-rdm630 rfid1(9, 0);  //TX-pin of RDM630 connected to Arduino pin 9
-rdm630 rfid2(10, 0);
-rdm630 rfid3(11, 0);
-rdm630 rfid4(12, 0);
+rdm630 rfid1(7, 0);
+rdm630 rfid2(8, 0);
+rdm630 rfid3(9, 0);  //TX-pin of RDM630 connected to Arduino pin 9
+rdm630 rfid4(10, 0);
+rdm630 rfid5(11, 0);
+rdm630 rfid6(12, 0);
 
-int leds[nreader] = {2, 3, 4, 5}; // pins for leds to indicate when object is placed correctly over sensor
+//UNUSED int leds[nreader] = {2, 3, 4, 5}; // pins for leds to indicate when object is placed correctly over sensor
 //boolean busy = false; //not really sure if I need this
-rdm630 allreaders[4] = {rfid1, rfid2, rfid3, rfid4}; //array containing each rfid to be polled
+rdm630 allreaders[nreader] = {rfid1, rfid2, rfid3, rfid4,rfid5,rfid6}; //array containing each rfid to be polled
 String tag[nreader]; // array to store tags of currently placed tags
 int lock = 7; //pin for lock (not yet implemented fully)
 
-String objects[4] = {"160457ba0", "1603442510", "1707bc02f0", "1708b8280"}; //tagIDs of correct objects to be placed
+String objects[4] = {"160457ba0", "1603442510", "1707bc02f0", "1708b8280","",""}; //tagIDs of correct objects to be placed
 
 void setup()
 {
